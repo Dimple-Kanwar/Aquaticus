@@ -1,33 +1,20 @@
-import NFTService from '../services/nft.service';
-import { catchAsync } from '../utils/catchAsync';
+import {mintNFT,viewNFT } from '../services/nft.service';
+import { Request, Response } from 'express';
 
-const mintNFT = catchAsync(async (req, res) => {
-    const { tokenId, metadata } = req.body;
-    const nft = await NFTService.mintNFT(tokenId, req.user.address, metadata);
-    res.status(201).json(nft);
-});
 
-const transferNFT = catchAsync(async (req, res) => {
-    const { toAddress } = req.body;
-    const nft = await NFTService.transferNFT(
-        req.params.tokenId,
-        req.user.address,
-        toAddress
-    );
+const createNFT = async (req: Request, res: Response) => {
+    const { tokenId, metadata, userAddress } = req.body;
+    const result = await mintNFT(tokenId, userAddress, metadata);
+    res.status(201).json(result);
+}
+
+const getNFT = async (req: Request, res: Response) => {
+    const { tokenId } = req.params;
+    const nft = await viewNFT();
     res.json(nft);
-});
+}
 
-const updateNFTStats = catchAsync(async (req, res) => {
-    const nft = await NFTService.updateNFTStats(
-        req.params.tokenId,
-        req.user.address,
-        req.body
-    );
-    res.json(nft);
-});
-
-module.exports = {
-    mintNFT,
-    transferNFT,
-    updateNFTStats
+export default {
+    createNFT,
+    getNFT
 };

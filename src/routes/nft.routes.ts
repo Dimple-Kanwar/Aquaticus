@@ -1,11 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const { authenticateToken } = require('../middleware/auth.middleware');
-const { apiLimiter } = require('../middleware/rateLimiter.middleware');
-const nftController = require('../controllers/nft.controller');
+import { Router } from 'express';
+import nftController from '../controllers/nft.controller';
 
-router.post('/mint', authenticateToken, apiLimiter, nftController.mintNFT);
-router.post('/:tokenId/transfer', authenticateToken, apiLimiter, nftController.transferNFT);
-router.patch('/:tokenId/stats', authenticateToken, apiLimiter, nftController.updateNFTStats);
+const router = Router();
 
-module.exports = router;
+router.post('/mint', nftController.createNFT);
+router.get('/info/:tokenId', nftController.getNFT);
+
+export default router;

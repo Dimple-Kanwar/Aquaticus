@@ -12,6 +12,7 @@ const config: HardhatUserConfig = {
       }
     }
   },
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
     amoy: {

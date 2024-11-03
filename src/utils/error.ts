@@ -1,21 +1,17 @@
-class ErrorHandler extends Error {
-    constructor(statusCode, message) {
-        super();
-        this.statusCode = statusCode;
-        this.message = message;
-    }
-}
+// class ErrorHandler extends Error {
+//     statusCode: any;
+//     constructor(statusCode: any, message: string) {
+//         super();
+//         this.statusCode = statusCode;
+//         this.message = message;
+//     }
+// }
 
-const handleError = (err, req, res, next) => {
-    const { statusCode = 500, message } = err;
-    res.status(statusCode).json({
-        status: "error",
-        statusCode,
-        message
-    });
-};
-
-export default {
-    ErrorHandler,
-    handleError
-};
+// // export const handleError = (err: { statusCode?: 500 | undefined; message: any; }, req: Request, res: Response, next: any) => {
+// //     const { statusCode = 500, message } = err;
+// //     res.status(statusCode).json({
+// //         status: "error",
+// //         statusCode,
+// //         message
+// //     });
+// // };
