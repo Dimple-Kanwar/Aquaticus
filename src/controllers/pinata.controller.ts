@@ -1,4 +1,4 @@
-import { uploadFileToIPFS } from '../services/pinata.service';
+import { fetchFile, uploadFileToIPFS } from '../services/pinata.service';
 import { Request, Response } from 'express';
 
 
@@ -12,8 +12,8 @@ export const uploadFile = async(req: Request, res: Response) => {
     res.status(201).json(result);
 };
 
-// export const getFile = async (req: Request, res: Response) => {
-//     const { tokenId } = req.params;
-//     const nft = await getFile(tokenId);
-//     res.json(nft);
-// }
+export const getFile = async (req: Request, res: Response) => {
+    const { ipfsHash } = req.params;
+    const file = await fetchFile(ipfsHash);
+    res.json(file);
+}
