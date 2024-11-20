@@ -5,42 +5,74 @@
   "name": "TITLE", 
   "attributes": [
     {
-      "trait_type": "Base", 
-      "value": "Starfish"
+      "trait_type": "Origin", 
+      "value": "South East Asia"
     }, 
     {
-      "trait_type": "Eyes", 
-      "value": "Big"
+      "trait_type": "Fish_species", 
+      "value": "Betta Splendens"
     }, 
     {
-      "trait_type": "Mouth", 
-      "value": "Surprised"
+      "trait_type": "Given_Name", 
+      "value": "user_name"
     }, 
     {
-      "trait_type": "Level", 
-      "value": 5
+      "trait_type": "Gender", 
+      "value": "Male"
     }, 
     {
-      "trait_type": "Stamina", 
-      "value": 1.4
+      "trait_type": "Birth_Date", 
+      "value": "01/01/1995"
     }, 
     {
-      "trait_type": "Personality", 
-      "value": "Sad"
+      "trait_type": "Age", 
+      "value": 6
     }, 
     {
-      "display_type": "boost_number", 
-      "trait_type": "Aqua Power", 
-      "value": 40
+      "trait_type": "Mood", 
+      "value": "Normal"
     }, 
     {
-      "display_type": "boost_percentage", 
-      "trait_type": "Stamina Increase", 
-      "value": 10
+      "trait_type": "Hunger", 
+      "value": "Neutral"
     }, 
     {
-      "display_type": "number", 
-      "trait_type": "Generation", 
-      "value": 2
+      "trait_type": "Curiosity", 
+      "value": 0.50
+    },
+    {
+      "trait_type": "Friendliness", 
+      "value": 0.50
+    }, 
+    {
+      "trait_type": "Socialility", 
+      "value": 0.50
+    }, 
+    {
+      "trait_type": "Aggressiveness", 
+      "value": 0.50
+    }, 
+    {
+      "trait_type": "Playfulness", 
+      "value": 0.50
+    }, 
+    {
+      "trait_type": "Causiosness", 
+      "value": 0.50
+    }, 
+    {
+      "display_type": "Belly_Size", 
+      "trait_type": "Belly Size", 
+      "value": 0.10
+    }, 
+    {
+      "display_type": "3D_Mesh_Saturation", 
+      "trait_type": "3D Mesh Saturation", 
+      "value": 0.50
+    }, 
+    {
+      "display_type": "3D_Mesh_Shine", 
+      "trait_type": "3D Mesh Shine", 
+      "value": 0.50
     }]
   }

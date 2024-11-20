@@ -31,6 +31,7 @@ contract NFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         _setTokenURI(tokenId, uri);
 
         emit NFTMinted(msg.sender, tokenId);
+        
     }
 
 

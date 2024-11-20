@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/nfts', nftRoutes);
-app.use('/api/ipfs', pinataRoutes);
+app.use('/api/pinata', pinataRoutes);
 app.get('/', (req: Request, res: Response) => {
   res.send('Server is running!');
 });

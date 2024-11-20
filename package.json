@@ -4,7 +4,7 @@
   "description": "NFT Gaming Smart Contract backend",
   "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "nodemon src/index.ts",
     "build": "tsc",
     "serve": "node dist/index.js",
     "test": "npx hardhat test",
@@ -32,11 +32,13 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4",
+    "express-validator": "^7.2.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.3",
     "multer": "^1.4.5-lts.1",
-    "pinata": "^1.7.2"
+    "pinata": "^1.7.2",
+    "xlsx": "^0.18.5"
   },
   "directories": {
     "test": "test"
