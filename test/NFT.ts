@@ -1,127 +1,66 @@
-import {
-  time,
-  loadFixture,
-} from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
-import { expect } from "chai";
-import hre from "hardhat";
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
-describe("Lock", function () {
-  // We define a fixture to reuse the same setup in every test.
-  // We use loadFixture to run this setup once, snapshot that state,
-  // and reset Hardhat Network to that snapshot in every test.
-  async function deployOneYearLockFixture() {
-    const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-    const ONE_GWEI = 1_000_000_000;
+describe("MyNFT Contract", function () {
+  let MyNFT, nftContract, owner, recipient, otherAccount;
 
-    const lockedAmount = ONE_GWEI;
-    const unlockTime = (await time.latest()) + ONE_YEAR_IN_SECS;
-
-    // Contracts are deployed using the first signer/account by default
-    const [owner, otherAccount] = await hre.ethers.getSigners();
-
-    const Lock = await hre.ethers.getContractFactory("Lock");
-    const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-    return { lock, unlockTime, lockedAmount, owner, otherAccount };
-  }
+  beforeEach(async function () {
+    // Deploy contract
+    MyNFT = await ethers.getContractFactory("MyNFT");
+    [owner, recipient, otherAccount] = await ethers.getSigners();
+    
+    nftContract = await MyNFT.deploy("Test NFT", "TNFT");
+    await nftContract.waitForDeployment();
+  });
 
   describe("Deployment", function () {
-    it("Should set the right unlockTime", async function () {
-      const { lock, unlockTime } = await loadFixture(deployOneYearLockFixture);
-
-      expect(await lock.unlockTime()).to.equal(unlockTime);
-    });
-
-    it("Should set the right owner", async function () {
-      const { lock, owner } = await loadFixture(deployOneYearLockFixture);
-
-      expect(await lock.owner()).to.equal(owner.address);
-    });
-
-    it("Should receive and store the funds to lock", async function () {
-      const { lock, lockedAmount } = await loadFixture(
-        deployOneYearLockFixture
-      );
-
-      expect(await hre.ethers.provider.getBalance(lock.target)).to.equal(
-        lockedAmount
-      );
-    });
-
-    it("Should fail if the unlockTime is not in the future", async function () {
-      // We don't use the fixture here because we want a different deployment
-      const latestTime = await time.latest();
-      const Lock = await hre.ethers.getContractFactory("Lock");
-      await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-        "Unlock time should be in the future"
-      );
+    it("Should set correct name and symbol", async function () {
+      expect(await nftContract.name()).to.equal("Test NFT");
+      expect(await nftContract.symbol()).to.equal("TNFT");
     });
   });
 
-  describe("Withdrawals", function () {
-    describe("Validations", function () {
-      it("Should revert with the right error if called too soon", async function () {
-        const { lock } = await loadFixture(deployOneYearLockFixture);
+  describe("Minting", function () {
+    it("Should mint NFT successfully", async function () {
+      const tokenURI = "https://example.com/token/1";
+      const tx = await nftContract.mintNFT(recipient.address, tokenURI);
+      const receipt = await tx.wait();
 
-        await expect(lock.withdraw()).to.be.revertedWith(
-          "You can't withdraw yet"
-        );
-      });
-
-      it("Should revert with the right error if called from another account", async function () {
-        const { lock, unlockTime, otherAccount } = await loadFixture(
-          deployOneYearLockFixture
-        );
-
-        // We can increase the time in Hardhat Network
-        await time.increaseTo(unlockTime);
-
-        // We use lock.connect() to send a transaction from another account
-        await expect(lock.connect(otherAccount).withdraw()).to.be.revertedWith(
-          "You aren't the owner"
-        );
-      });
-
-      it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
-        const { lock, unlockTime } = await loadFixture(
-          deployOneYearLockFixture
-        );
-
-        // Transactions are sent using the first signer by default
-        await time.increaseTo(unlockTime);
-
-        await expect(lock.withdraw()).not.to.be.reverted;
-      });
+      // Check token minting
+      const tokenId = receipt.logs[0].args[2];
+      expect(await nftContract.ownerOf(tokenId)).to.equal(recipient.address);
+      expect(await nftContract.tokenURI(tokenId)).to.equal(tokenURI);
     });
 
-    describe("Events", function () {
-      it("Should emit an event on withdrawals", async function () {
-        const { lock, unlockTime, lockedAmount } = await loadFixture(
-          deployOneYearLockFixture
-        );
-
-        await time.increaseTo(unlockTime);
-
-        await expect(lock.withdraw())
-          .to.emit(lock, "Withdrawal")
-          .withArgs(lockedAmount, anyValue); // We accept any value as `when` arg
-      });
+    it("Should prevent non-owner from minting", async function () {
+      const tokenURI = "https://example.com/token/1";
+      await expect(
+        nftContract.connect(otherAccount).mintNFT(recipient.address, tokenURI)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    describe("Transfers", function () {
-      it("Should transfer the funds to the owner", async function () {
-        const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
-          deployOneYearLockFixture
-        );
+    it("Should increment token ID with each mint", async function () {
+      const tokenURI1 = "https://example.com/token/1";
+      const tokenURI2 = "https://example.com/token/2";
+      
+      const tx1 = await nftContract.mintNFT(recipient.address, tokenURI1);
+      const receipt1 = await tx1.wait();
+      const tokenId1 = receipt1.logs[0].args[2];
+      const tx2 = await nftContract.mintNFT(recipient.address, tokenURI2);
+      const receipt2 = await tx2.wait();
+      const tokenId2 = receipt2.logs[0].args[2];
+      expect(tokenId2).to.equal(Number(tokenId1) + 1);
+    });
+  });
 
-        await time.increaseTo(unlockTime);
+  describe("Token URI", function () {
+    it("Should set and retrieve token URI correctly", async function () {
+      const tokenURI = "https://example.com/token/1";
+      const tx = await nftContract.mintNFT(recipient.address, tokenURI);
+      const receipt = await tx.wait();
+      const tokenId = receipt.logs[0].args[2];
 
-        await expect(lock.withdraw()).to.changeEtherBalances(
-          [owner, lock],
-          [lockedAmount, -lockedAmount]
-        );
-      });
+      expect(await nftContract.tokenURI(tokenId)).to.equal(tokenURI);
     });
   });
 });

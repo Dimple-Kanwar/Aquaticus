@@ -1,13 +1,18 @@
 import { Router } from 'express';
-import {createNFT,getAllNFTs,getNFT, getNFTMetadata} from '../controllers/nft.controller';
-import multer from 'multer';
+import {createNFT,getAllNftsByOwner,getNFT, getNFTMetadata} from '../controllers/nft.controller';
+import { validateMintNFT } from '../middleware/validation.middleware';
+import { validateNFTFile } from '../middleware/file-upload.middleware';
 
 const router = Router();
-const upload = multer({ dest: '/tmp' });
 
-router.post('/mint',  upload.single('file'), createNFT);
+router.post(
+    '/mint',  
+    validateNFTFile, // File upload middleware
+    validateMintNFT,  // DTO validation middleware
+    createNFT
+);
 router.get('/info/:tokenId', getNFT);
-router.get('/:userAddress', getAllNFTs);
+router.get('/:ownerAddress', getAllNftsByOwner);
 router.get('/nft/:metadataHash', getNFTMetadata);
 
 export default router;

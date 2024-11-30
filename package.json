@@ -19,16 +19,20 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.8.7",
+    "@types/uuid": "^10.0.0",
     "express": "^4.21.1",
-    "hardhat": "^2.22.15",
+    "hardhat": "^2.22.16",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@nestjs/common": "^10.4.12",
     "@openzeppelin/contracts": "^4.9.6",
     "@pinata/sdk": "^2.1.0",
     "body-parser": "^1.20.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4",
@@ -38,6 +42,7 @@
     "mongoose": "^8.7.3",
     "multer": "^1.4.5-lts.1",
     "pinata": "^1.7.2",
+    "supertest": "^7.0.0",
     "xlsx": "^0.18.5"
   },
   "directories": {

@@ -2,7 +2,8 @@ import pinataSDK from '@pinata/sdk';
 import fs from "fs";
 import "dotenv/config";
 import axios from "axios";
-import { NFTMetadata, PinataFile } from '../interfaces';
+import { NFTMetadata } from '../dto/nft-metadata.dto';
+import { PinataFile } from '../dto/pinata.dto';
 
 const pinata = new pinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_API_SECRET);
 
@@ -17,11 +18,8 @@ export const uploadFileToPinata = async (filePath: fs.PathLike, fileName: string
     },
   )
     .then(function (response) {
-      console.log("file uploaded: ", response.IpfsHash);
-      
       // Cleanup uploaded file
       fs.unlinkSync(filePath);
-
       return {
         success: true,
         message: "File uploaded successfully!",
@@ -39,7 +37,6 @@ export const uploadFileToPinata = async (filePath: fs.PathLike, fileName: string
 }
 
 // Upload metadata to Pinata
-
 export const uploadMetadataToPinata = async (metadata: NFTMetadata) => {
   try {
       const result = await pinata.pinJSONToIPFS(metadata);
@@ -49,21 +46,21 @@ export const uploadMetadataToPinata = async (metadata: NFTMetadata) => {
   }
 }
 
-export const fetchFile = async (ipfsHash: string) => {
+export const fetchFile = async (tokenURI: string) => {
   let config = {
     method: 'get',
     maxBodyLength: Infinity,
-    url: `${process.env.PINATA_DOMAIN}${ipfsHash}`
+    url: `${tokenURI}`
   };
 
   return axios.request(config)
     .then((response) => {
-      console.log(JSON.stringify(response.data));
+      console.log("fetchFile:: response: ",JSON.stringify(response.data));
       return response.data;
     })
     .catch((error) => {
-      console.log(error);
-      return error;
+      console.log("fetchFile:: error: ",error);
+      throw error;
     });
 }
 
@@ -102,22 +99,4 @@ export const fetchUserFiles = async (userId: string): Promise<PinataFile[]> => {
     console.error('Error fetching Pinata files:', error);
     throw new Error('Unable to retrieve files');
   }
-}
-
-export const getNFTMetadataFromPinata = async (metadataHash: string) => {
-  let config = {
-    method: 'get',
-    maxBodyLength: Infinity,
-    url: `${process.env.PINATA_DOMAIN}${metadataHash}`
-  };
-
-  return axios.request(config)
-    .then((response) => {
-      console.log(JSON.stringify(response.data));
-      return response.data;
-    })
-    .catch((error) => {
-      console.log(error);
-      return error;
-    });
 }

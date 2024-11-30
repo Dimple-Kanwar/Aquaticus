@@ -1,71 +1,97 @@
-import { ethers } from "ethers";
 import { contract } from "../utils/contract";
-import { uploadFileToPinata, uploadMetadataToPinata } from "./pinata.service";
-import { NFTMetadata } from "../interfaces";
+import { fetchFile, uploadFileToPinata, uploadMetadataToPinata } from "./pinata.service";
+import { PathLike } from "fs";
+import axios from "axios";
+import { MintNFTDto } from "../dto/mint-nft.dto";
+import { NFTMetadata } from "../dto/nft-metadata.dto";
+import { NFT } from "../dto/nft.dto";
 
-
-export const mintNFT = async (body: any, file: Express.Multer.File) => {
-  // Upload image to Pinata
-  const uploadResponse = await uploadFileToPinata(
-    file.path,
-    file.originalname
-  );
-  const imageHash = uploadResponse.result;
-  // Create metadata
-  const metadata: NFTMetadata = {
-    name: body.name,
-    description: body.description,
-    image: `${imageHash}`,
-    attributes: JSON.parse(body.attributes),
-  };
-  // Upload metadata to Pinata
-  const metadataHash = await uploadMetadataToPinata(metadata);
-  const nftContract = (await contract()).nftContract;
-  const wallet = (await contract()).wallet;
-  // Mint NFT
-  const tx = await nftContract.safeMint(
-    body.recipient || wallet.address,
-    `ipfs://${metadataHash}`
-  );
-  const receipt = await tx.wait();
-  return {
-    success: true,
-    transactionHash: tx.hash,
-    metadata: `ipfs://${metadataHash}`,
-    image: imageHash,
-    receipt
-  };
-}
-
-export const viewNFT = async () => {
-
-}
-
-export const listNFTByUser = async (userAddress: string) => {
+export const mintNFT = async (body: MintNFTDto, filePath: PathLike, fileOriginalname: string) => {
   try {
-    // const response = await axios.get('https://deep-index.moralis.io/api/v2.2/wallets/{address}/tokens', {
-    //   headers: {
-    //     'X-API-Key': this.moralisApiKey
-    //   },
-    //   params: {
-    //     chain: 'eth', // Ethereum mainnet
-    //     token_type: 'ERC721,ERC1155' // NFT token types
-    //   }
-    // });
+    // Upload file to Pinata
+    const uploadResponse = await uploadFileToPinata(
+      filePath,
+      fileOriginalname
+    );
+    const metadataObj = JSON.parse(body.metadata);
+    const fileHash = uploadResponse.result;
+    const attributes = metadataObj.attributes;
+    // Create metadata
+    const metadata: NFTMetadata = {
+      name: metadataObj.name,
+      description: metadataObj.description,
+      image: `${fileHash}`,
+      attributes,
+    };
+    // Upload metadata to Pinata
+    const metadataURL = await uploadMetadataToPinata(metadata);
+    const nftContract = (await contract()).nftContract;
+    const wallet = (await contract()).wallet;
 
-    // return response.data.result.map((nft: any) => ({
-    //   contract_address: nft.token_address,
-    //   token_id: nft.token_id,
-    //   owner_address: userAddress,
-    //   metadata: {
-    //     name: nft.name,
-    //     description: nft.description,
-    //     image: nft.image,
-    //     attributes: nft.attributes ? JSON.parse(nft.attributes) : []
-    //   }
-    // }));
+    // Mint NFT
+    const tx = await nftContract.mintNFT(
+      body.recipient || wallet.address,
+      `${metadataURL}`
+    );
+    const receipt = await tx.wait();
+    const tokenId = Number(receipt.logs[0].args[2]);
+    return {
+      tokenId,
+      success: true,
+      transactionHash: tx.hash
+    };
   } catch (error) {
-    console.error('Error fetching NFTs:', error);
-    throw new Error('Unable to retrieve NFTs');
+    console.error('Error in mintNFT:', error);
+    throw error;
+  }
+}
+
+
+export const getNftsByOwner = async (ownerAddress: string): Promise<NFT[]> => {
+  try {
+    const nftContract = (await contract()).nftContract;
+    const balance = await nftContract.balanceOf(ownerAddress);
+    console.log({balance})
+    const nfts = [];
+
+    for (let i = 0; i < Number(balance); i++) {
+      const tokenId = await nftContract.tokenOfOwnerByIndex(ownerAddress, i);
+      const tokenUri = await nftContract.tokenURI(tokenId);
+
+      // Fetch metadata from IPFS
+      const metadataResponse = await axios.get(
+        tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/')
+      );
+      nfts.push({
+        contract_address: nftContract.target.toString(),
+        owner_address: ownerAddress,
+        token_id: tokenId.toString(),
+        metadata: metadataResponse.data
+      });
+    }
+
+    return nfts;
+  } catch (error) {
+    console.error('Error in getAllNftsByOwner:', error);
+    throw new Error('Failed to retrieve NFTs');
+  }
+}
+
+// Get NFT by tokenId
+export const getNFTById = async (tokenId: number) => {
+  // Additional validation if needed
+  if (!tokenId) {
+    throw new Error('Token Id is required');
+  }
+  try {
+    const nftContract = (await contract()).nftContract;
+    const tokenURI = await nftContract.tokenURI(tokenId);
+    console.log({ tokenURI });
+    const nftFile = await fetchFile(tokenURI);
+    console.log({ nftFile });
+    return { tokenId, ...nftFile };
+  } catch (error) {
+    console.error('Error in getNFTById:', error);
+    throw error;
   }
 }
