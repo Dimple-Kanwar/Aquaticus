@@ -13,6 +13,6 @@ router.post(
 );
 router.get('/info/:tokenId', getNFT);
 router.get('/:ownerAddress', getAllNftsByOwner);
-router.get('/nft/:metadataHash', getNFTMetadata);
+router.get('/asset/:metadataHash', getNFTMetadata);
 
 export default router;
