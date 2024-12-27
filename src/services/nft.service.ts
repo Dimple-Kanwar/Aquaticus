@@ -5,6 +5,7 @@ import axios from "axios";
 import { MintNFTDto } from "../dto/mint-nft.dto";
 import { NFTMetadata } from "../dto/nft-metadata.dto";
 import { NFT } from "../dto/nft.dto";
+import { AddressLike, TransactionReceipt } from "ethers";
 
 export const mintNFT = async (body: MintNFTDto, filePath: PathLike, fileOriginalname: string) => {
   try {
@@ -51,7 +52,7 @@ export const getNftsByOwner = async (ownerAddress: string): Promise<NFT[]> => {
   try {
     const nftContract = (await contract()).nftContract;
     const balance = await nftContract.balanceOf(ownerAddress);
-    console.log({balance})
+    console.log({ balance })
     const nfts = [];
 
     for (let i = 0; i < Number(balance); i++) {
@@ -94,4 +95,21 @@ export const getNFTById = async (tokenId: number) => {
     console.error('Error in getNFTById:', error);
     throw error;
   }
+}
+
+// Transfer NFT from the nft holder to new nft receiver
+export const _transferNFT = async (from: AddressLike, to: AddressLike, tokenId: number) => {
+
+  const nftContract = (await contract()).nftContract;
+
+  // verify ownership
+  const owner = await nftContract.ownerOf(tokenId);
+  if (owner != from) {
+    throw new Error("From address is not the token owner.");
+  }
+
+  const wallet = (await contract()).wallet;
+  const tx = await nftContract.transferFrom(from, to, tokenId);
+  const receipt: TransactionReceipt = await tx.wait();
+  return receipt.hash;
 }

@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-import { getNFTById, getNftsByOwner, mintNFT } from '../services/nft.service';
+import { _transferNFT, getNFTById, getNftsByOwner, mintNFT } from '../services/nft.service';
 import { Request, Response } from 'express';
 import { fetchFile } from '../services/pinata.service';
 import { MintNFTDto } from '../dto/mint-nft.dto';
@@ -18,9 +18,9 @@ export const createNFT = async (req: Request, res: Response) => {
       result
     });
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Minting NFT failed', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    res.status(500).json({
+      message: 'Minting NFT failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 
@@ -87,7 +87,25 @@ export const getAllNftsByOwner = async (req: Request, res: Response) => {
 };
 
 // Transfer NFT
+export const transferNFT = async (req: Request, res: Response) => {
+  try {
+    const { from, to, tokenId } = req.body;
+    const hash = await _transferNFT(from, to, tokenId);
+    console.log({ hash });
+    res.status(200).json({
+      transactionHash: hash,
+      message: "NFT transferred successfully!"
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: `NFT transfer Error: ${error.message}`
+      });  
+    }
+    
+  }
 
+}
 // Burn NFT
 
 // Update NFT
