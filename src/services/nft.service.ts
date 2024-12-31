@@ -10,7 +10,7 @@ import { Multer } from "multer";
 
 export const mintNFT = async (body: MintNFTDto, nftFile: Express.Multer.File, metadataFile: Express.Multer.File) => {
   try {
-    // Upload file to Pinata
+    // Upload nft images file to Pinata
     const uploadResponse = await uploadFileToPinata(
       nftFile.path,
       nftFile.originalname

@@ -28,11 +28,7 @@ export const uploadFileToPinata = async (filePath: fs.PathLike, fileName: string
     })
     .catch(function (error) {
       console.log(`Failed to upload file to Pinata: ${error}`);
-      return {
-        success: false,
-        message: error.message,
-        result: null
-      };
+      throw new error(error.message);
     });
 }
 
