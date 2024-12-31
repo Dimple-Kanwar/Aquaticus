@@ -37,24 +37,34 @@ If you want to use polygon network, replace localhost with polygon
 ### Mint NFT
 
         curl --location 'http://localhost:8080/api/assets/mint' \
-        --form 'nftFiles=@"/home/phinelipy/Pictures/fish.png"' \
+        --form 'nftFiles=@"<image_file_path>"' \
         --form 'metadata="{
-        \"name\": \"my fish\",
-        \"description\": \"My awesome NFT description\",
+        \"name\": \"<nft_name_here>\",
+        \"description\": \"<nft_description_here>\",
         \"attributes\": [
         {
-        \"trait_type\": \"Color\",
-        \"value\": \"orange\"
+        \"trait_type\": \"<nft_trait_name>\",
+        \"value\": \"<nft_trait_value>\"
         }
         ]
         }"' \
-        --form 'recipient="0x865639b103B5cb25Db1C8703a02a64449dA4d038"'
+        --form 'recipient="<nft_owner_address>"'
 
 Note: you can add more traits in the attributes
 
 ### View NFT
 
-        curl --location 'http://localhost:8080/api/assets/info/1'
+        curl --location 'http://localhost:8080/api/assets/info/<token_id>'
 
 
+### Transfer NFT
 
+        curl --location --request PUT 'http://localhost:8080/api/assets/transfer' \
+        --header 'Content-Type: application/json' \
+        --data '{
+        "from": "<nft_owner_address>",
+        "to": "<new_nft_owner>",
+        "tokenId": <token_id>
+        }'
+
+Note: to test the transfer NFT api, make sure the Private key of the nft owner address in the environment variable is correct.
