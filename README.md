@@ -37,7 +37,7 @@ If you want to use polygon network, replace localhost with polygon
 ### Mint NFT
 
         curl --location 'http://localhost:8080/api/assets/mint' \
-        --form 'nftFile=@"/home/phinelipy/Pictures/fish.png"' \
+        --form 'nftFiles=@"/home/phinelipy/Pictures/fish.png"' \
         --form 'metadata="{
         \"name\": \"my fish\",
         \"description\": \"My awesome NFT description\",

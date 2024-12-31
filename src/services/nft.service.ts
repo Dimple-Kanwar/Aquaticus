@@ -1,20 +1,22 @@
 import { contract } from "../utils/contract";
 import { fetchFile, uploadFileToPinata, uploadMetadataToPinata } from "./pinata.service";
-import { PathLike } from "fs";
+import { readFileSync } from "fs";
 import axios from "axios";
 import { MintNFTDto } from "../dto/mint-nft.dto";
 import { NFTMetadata } from "../dto/nft-metadata.dto";
 import { NFT } from "../dto/nft.dto";
 import { AddressLike, TransactionReceipt } from "ethers";
+import { Multer } from "multer";
 
-export const mintNFT = async (body: MintNFTDto, filePath: PathLike, fileOriginalname: string) => {
+export const mintNFT = async (body: MintNFTDto, nftFile: Express.Multer.File, metadataFile: Express.Multer.File) => {
   try {
     // Upload file to Pinata
     const uploadResponse = await uploadFileToPinata(
-      filePath,
-      fileOriginalname
+      nftFile.path,
+      nftFile.originalname
     );
-    const metadataObj = JSON.parse(body.metadata);
+    const metadataContent = readFileSync(metadataFile.path, { encoding: "ascii"});
+    const metadataObj = JSON.parse(metadataContent);
     const fileHash = uploadResponse.result;
     const attributes = metadataObj.attributes;
     // Create metadata

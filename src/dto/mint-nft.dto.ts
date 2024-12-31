@@ -1,5 +1,5 @@
 export class MintNFTDto {
   recipient!: string;
-  metadata!: string;
+  metadata!: Express.Multer.File;
   nftFile!: Express.Multer.File;
 }

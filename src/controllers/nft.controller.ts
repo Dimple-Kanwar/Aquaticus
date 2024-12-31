@@ -10,8 +10,10 @@ export const createNFT = async (req: Request, res: Response) => {
   try {
     console.log("createNFT")
     const mintDto: MintNFTDto = req.body;
-    const nftFile = req.file!;
-    const result = await mintNFT(mintDto, nftFile.path, nftFile.filename);
+    const files: any = req.files;
+    const nftFile = files.nftFile[0]
+    const metadataFile = files.metadataFile[0];
+    const result = await mintNFT(mintDto, nftFile, metadataFile);
     console.log({ result });
     res.status(201).json({
       message: 'NFT Minted Successfully',
@@ -100,9 +102,9 @@ export const transferNFT = async (req: Request, res: Response) => {
     if (error instanceof Error) {
       res.status(500).json({
         message: `NFT transfer Error: ${error.message}`
-      });  
+      });
     }
-    
+
   }
 
 }
