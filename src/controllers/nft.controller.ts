@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-import { _transferNFT, getNFTById, getNftsByOwner, mintNFT } from '../services/nft.service';
+import { _transferNFT, getNFTById, getNftsByOwner, mintNFT, _burnNFT } from '../services/nft.service';
 import { Request, Response } from 'express';
 import { fetchFile } from '../services/pinata.service';
 import { MintNFTDto } from '../dto/mint-nft.dto';
@@ -108,6 +108,18 @@ export const transferNFT = async (req: Request, res: Response) => {
   }
 
 }
+
 // Burn NFT
+export const burnNFT = async (req: Request, res: Response) => {
+  try {
+    const { tokenId } = req.params;
+    // Call the smart contract's burnNFT function here
+    // Assuming you have a service function to interact with the contract
+    const result = await _burnNFT(Number(tokenId));
+    res.status(200).json({ message: 'NFT burned successfully', result });
+  } catch (error) {
+    res.status(500).json({ message: 'Burning NFT failed', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+}
 
 // Update NFT

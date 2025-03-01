@@ -1,12 +1,11 @@
 import { contract } from "../utils/contract";
-import { fetchFile, uploadFileToPinata, uploadMetadataToPinata } from "./pinata.service";
+import { fetchFile, uploadFileToPinata, uploadMetadataToPinata, deleteFromPinata } from "./pinata.service";
 import { readFileSync } from "fs";
 import axios from "axios";
 import { MintNFTDto } from "../dto/mint-nft.dto";
 import { NFTMetadata } from "../dto/nft-metadata.dto";
 import { NFT } from "../dto/nft.dto";
 import { AddressLike, TransactionReceipt } from "ethers";
-import { Multer } from "multer";
 
 export const mintNFT = async (body: MintNFTDto, nftFile: Express.Multer.File, metadataFile: Express.Multer.File) => {
   try {
@@ -115,3 +114,18 @@ export const _transferNFT = async (from: AddressLike, to: AddressLike, tokenId: 
   const receipt: TransactionReceipt = await tx.wait();
   return receipt.hash;
 }
+
+// Burn NFT
+export const _burnNFT = async (tokenId: number) => {
+    const nftContract = (await contract()).nftContract;
+    const tokenURI = await nftContract.tokenURI(tokenId);
+    const ipfsHash = tokenURI.replace('ipfs://', '');
+    const tx = await nftContract.burnNFT(tokenId);
+    const receipt = await tx.wait();
+    const unpinFile = await deleteFromPinata(ipfsHash);
+    console.log({unpinFile});
+    const metadataIpfsHash = ipfsHash + ".json";
+    const unpinMetadata = await deleteFromPinata(metadataIpfsHash);
+    console.log({unpinMetadata});
+    return receipt;
+};
