@@ -55,8 +55,7 @@ export const getNftsByOwner = async (ownerAddress: string): Promise<NFT[]> => {
     const balance = await nftContract.balanceOf(ownerAddress);
     console.log({ balance })
     const nfts = [];
-
-    for (let i = 0; i < Number(balance); i++) {
+    for (let i = 0; i < balance; i++) {
       const tokenId = await nftContract.tokenOfOwnerByIndex(ownerAddress, i);
       const tokenUri = await nftContract.tokenURI(tokenId);
 
@@ -65,7 +64,6 @@ export const getNftsByOwner = async (ownerAddress: string): Promise<NFT[]> => {
         tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/')
       );
       nfts.push({
-        contract_address: nftContract.target.toString(),
         owner_address: ownerAddress,
         token_id: tokenId.toString(),
         metadata: metadataResponse.data
