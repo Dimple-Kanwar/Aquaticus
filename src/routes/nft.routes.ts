@@ -15,6 +15,6 @@ router.get('/info/:tokenId', getNFT);
 router.get('/:ownerAddress', getAllNftsByOwner);
 router.get('/asset/:metadataHash', getNFTMetadata);
 router.put('/transfer', transferNFT)
-router.delete('/burn/:tokenId', burnNFT)
+router.post('/burn/:tokenId', burnNFT)
 
 export default router;

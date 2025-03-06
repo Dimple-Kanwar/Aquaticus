@@ -102,9 +102,9 @@ export const fetchUserFiles = async (userId: string): Promise<PinataFile[]> => {
   }
 };
 
-export const deleteFromPinata = async (ipfsHash: string) => {
+export const deleteFromPinata = async (tokenURI: string) => {
   try {
-    const response = await pinata.unpin(ipfsHash);
+    const response = await pinata.unpin(tokenURI);
     return response; // Return the response
   } catch (error: any) {
     throw new Error(`Failed to delete from Pinata: ${error.message}`);
