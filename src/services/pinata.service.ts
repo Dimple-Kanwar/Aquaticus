@@ -24,11 +24,7 @@ export const uploadFileToPinata = async (
     .then(function (response) {
       // Cleanup uploaded file
       fs.unlinkSync(filePath);
-      return {
-        success: true,
-        message: "File uploaded successfully!",
-        result: `${process.env.PINATA_DOMAIN}${response.IpfsHash}`,
-      };
+      return `${process.env.PINATA_DOMAIN}${response.IpfsHash}`;
     })
     .catch(function (error) {
       console.log(`Failed to upload file to Pinata: ${error}`);
@@ -56,7 +52,7 @@ export const fetchFile = async (tokenURI: string) => {
   return axios
     .request(config)
     .then((response) => {
-      console.log("fetchFile:: response: ", JSON.stringify(response.data));
+      // console.log("fetchFile:: response: ", JSON.stringify(response.data));
       return response.data;
     })
     .catch((error) => {
@@ -102,10 +98,12 @@ export const fetchUserFiles = async (userId: string): Promise<PinataFile[]> => {
   }
 };
 
-export const deleteFromPinata = async (tokenURI: string) => {
+export const deleteFromPinata = async (ipfsMetadataHash: string, ipfsImageHash: string) => {
   try {
-    const response = await pinata.unpin(tokenURI);
-    return response; // Return the response
+    const imageResponse = await pinata.unpin(ipfsImageHash);
+    console.log({imageResponse});
+    const response = await pinata.unpin(ipfsMetadataHash);
+    console.log({response});
   } catch (error: any) {
     throw new Error(`Failed to delete from Pinata: ${error.message}`);
   }

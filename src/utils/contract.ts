@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import CONTRACT_ABI from "../../artifacts/contracts/NFT.sol/MyNFT.json";
+import CONTRACT_ABI from "../../artifacts/contracts/NFT.sol/AquaticusNFTUpgradeable.json";
 
 
 export const contract = async () => {

@@ -1,17 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 
-export function errorHandler(
-  err: Error, 
-  req: Request, 
-  res: Response, 
-  next: NextFunction
-) {
-  console.error(err);
+interface AppError extends Error {
+  code?: number;
+  statusCode?: number;
+}
 
-  res.status(500).json({
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'production' 
-      ? 'An unexpected error occurred' 
-      : err.message
+export const errorHandler = (
+  error: AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  console.error('Error:', error);
+
+  const statusCode = error.statusCode || error.code || 500;
+  
+  res.status(statusCode).json({
+    success: false,
+    message: error.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? error : undefined
   });
+};
+
+// Custom error class
+export class ApiError extends Error {
+  constructor(
+    public statusCode: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }

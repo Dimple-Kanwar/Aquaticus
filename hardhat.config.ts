@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "@openzeppelin/hardhat-upgrades";
 require("dotenv").config();
 
 const config: HardhatUserConfig = {
@@ -11,6 +12,9 @@ const config: HardhatUserConfig = {
         runs: 200
       }
     }
+  },
+  sourcify: {
+    enabled: true
   },
   defaultNetwork: "hardhat",
   networks: {

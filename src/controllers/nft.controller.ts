@@ -1,80 +1,89 @@
-import { validationResult } from "express-validator";
 import {
+  _burnNFT,
   _transferNFT,
   getNFTById,
   getNftsByOwner,
   mintNFT,
-  _burnNFT,
 } from "../services/nft.service";
 import { Request, Response } from "express";
 import { fetchFile } from "../services/pinata.service";
 import { MintNFTDto } from "../dto/mint-nft.dto";
+import { handleControllerError, NFTError } from "../utils/nft.error";
 import { ethers } from "ethers";
 
 // Mint an NFT
 export const createNFT = async (req: Request, res: Response) => {
   try {
-    console.log("createNFT");
+    // Validate request
+    const nftFile: any = req.file!;
     const mintDto: MintNFTDto = req.body;
-    const files: any = req.files;
-    const nftFile = files.nftFile[0];
-    const metadataFile = files.metadataFile[0];
-    const result = await mintNFT(mintDto, nftFile, metadataFile);
+
+    if (!nftFile) {
+      throw new NFTError("Missing required NFT file", 400);
+    }
+    if (!req.body.metadata) {
+      throw new NFTError("Missing metadata", 400);
+    }
+    if (!req.body.recipient) throw new NFTError("Missing recipient", 400);
+    else if (!ethers.isAddress(req.body.recipient)) {
+      throw new NFTError("Invalid Ethereum address", 400);
+    }
+    console.log("createNFT");
+    const result = await mintNFT(mintDto, nftFile);
     console.log({ result });
     res.status(201).json({
+      success: true,
       message: "NFT Minted Successfully",
-      result,
+      data: result,
     });
+    return;
   } catch (error) {
-    res.status(500).json({
-      message: "Minting NFT failed",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    return handleControllerError(error, res, "Minting NFT failed");
   }
 };
 
 // Get NFT Metadata by metadata hash
 export const getNFTMetadata = async (req: Request, res: Response) => {
   try {
-    console.log({ metadataHash: req.params });
-    const tokenURI = `${process.env.PINATA_DOMAIN}${req.params.metadataHash}`;
+    const { metadataHash } = req.params;
+    if (!metadataHash) {
+      throw new NFTError("Metadata hash is required", 400);
+    }
+    const tokenURI = `${process.env.PINATA_DOMAIN}${metadataHash}`;
     const result = await fetchFile(tokenURI);
-    res.json(result);
+    if (!result) {
+      throw new NFTError("NFT metadata not found", 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+    return;
   } catch (error) {
-    res.status(404).json({ error: "NFT metadata not found" });
+    return handleControllerError(error, res, "Failed to fetch NFT metadata");
   }
 };
 
 // Get NFT by Id
 export const getNFT = async (req: Request, res: Response) => {
   try {
-    const tokenId = Number(req.params.tokenId);
-
-    // Validate tokenId is a number
-    if (isNaN(tokenId)) {
-      res.status(400).json({ error: "Invalid token ID format" });
-      return;
-    }
-
-    const result = await getNFTById(tokenId);
-    // Handle not found case
+    const { tokenId } = req.params;
+    console.log({ tokenId });
+    const result = await getNFTById(Number(tokenId));
     if (!result) {
-      res.status(404).json({ error: "NFT not found" });
-      return;
+      console.log({ result });
+      throw new NFTError("NFT not found", 404);
     }
 
-    res.json(result);
-  } catch (error) {
-    // Differentiate between expected and unexpected errors
-    if (error instanceof Error) {
-      console.error("NFT Not Found: ", error);
-      res.status(404).json({ error: error.message });
-      return;
-    }
-
-    // Log unexpected errors (recommended for debugging)
-    console.error("Failed to retrieve NFT:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+    return;
+  } catch (error: any) {
+    console.log({ error });
+    return handleControllerError(error, res, "Failed to fetch NFT");
   }
 };
 
@@ -84,11 +93,8 @@ export const getAllNftsByOwner = async (req: Request, res: Response) => {
     const { ownerAddress } = req.params;
 
     // Validate Ethereum address format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(ownerAddress)) {
-      res.status(400).json({
-        message: "Invalid Ethereum address format",
-      });
-      return;
+    if (!ownerAddress || !ethers.isAddress(ownerAddress)) {
+      throw new NFTError("Invalid Ethereum address format", 400);
     }
 
     const nfts = await getNftsByOwner(ownerAddress);
@@ -105,14 +111,12 @@ export const getAllNftsByOwner = async (req: Request, res: Response) => {
       total: nfts.length,
       nfts,
     });
+    return;
   } catch (error: any) {
     console.error("Error fetching NFTs by owner:", error);
 
     // Handle specific error types if needed
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({
-      message: error.message || "Internal server error",
-    });
+    return handleControllerError(error, res, "Failed to fetch NFTs by owner");
   }
 };
 
@@ -120,18 +124,22 @@ export const getAllNftsByOwner = async (req: Request, res: Response) => {
 export const transferNFT = async (req: Request, res: Response) => {
   try {
     const { from, to, tokenId } = req.body;
-    const hash = await _transferNFT(from, to, tokenId);
-    console.log({ hash });
-    res.status(200).json({
-      transactionHash: hash,
-      message: "NFT transferred successfully!",
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({
-        message: `NFT transfer Error: ${error.message}`,
-      });
+    // Validate addresses and token ID
+    if (!from || !to || !tokenId) {
+      throw new NFTError("Missing required parameters", 400);
     }
+    if (!ethers.isAddress(from) || !ethers.isAddress(to)) {
+      throw new NFTError("Invalid Ethereum address format", 400);
+    }
+    const hash = await _transferNFT(from, to, tokenId);
+    res.status(200).json({
+      success: true,
+      message: "NFT transferred successfully!",
+      data: { transactionHash: hash },
+    });
+    return;
+  } catch (error) {
+    return handleControllerError(error, res, "NFT transfer failed");
   }
 };
 
@@ -148,17 +156,15 @@ export const burnNFT = async (req: Request, res: Response) => {
     }
     // Validate Ethereum address format
     if (!ethers.isAddress(ownerAddress)) {
-       res.status(400).json({ error: 'Invalid Ethereum address format' });
-       return;
+      res.status(400).json({ error: "Invalid Ethereum address format" });
+      return;
     }
 
     const result = await _burnNFT(Number(tokenId), ownerAddress);
     res.status(200).json({ message: "NFT burned successfully", result });
+    return;
   } catch (error) {
-    res.status(500).json({
-      message: "Burning NFT failed",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    handleControllerError(error, res, "NFT burn failed");
   }
 };
 

@@ -1,21 +1,21 @@
 import { contract } from "../utils/contract";
 import {
+  deleteFromPinata,
   fetchFile,
   uploadFileToPinata,
   uploadMetadataToPinata,
-  deleteFromPinata,
 } from "./pinata.service";
 import { readFileSync } from "fs";
 import axios from "axios";
 import { MintNFTDto } from "../dto/mint-nft.dto";
 import { NFTMetadata } from "../dto/nft-metadata.dto";
 import { NFT } from "../dto/nft.dto";
-import { AddressLike, ethers, TransactionReceipt } from "ethers";
+import { AddressLike, TransactionReceipt, TransactionResponse } from "ethers";
+import { Multer } from "multer";
 
 export const mintNFT = async (
   body: MintNFTDto,
-  nftFile: Express.Multer.File,
-  metadataFile: Express.Multer.File
+  nftFile: Express.Multer.File
 ) => {
   try {
     // Upload nft images file to Pinata
@@ -23,11 +23,9 @@ export const mintNFT = async (
       nftFile.path,
       nftFile.originalname
     );
-    const metadataContent = readFileSync(metadataFile.path, {
-      encoding: "ascii",
-    });
-    const metadataObj = JSON.parse(metadataContent);
-    const fileHash = uploadResponse.result;
+    // Read metadata
+    const metadataObj = JSON.parse(body.metadata);
+    const fileHash = uploadResponse;
     const attributes = metadataObj.attributes;
     // Create metadata
     const metadata: NFTMetadata = {
@@ -39,19 +37,21 @@ export const mintNFT = async (
     // Upload metadata to Pinata
     const metadataURL = await uploadMetadataToPinata(metadata);
     const nftContract = (await contract()).nftContract;
-    const wallet = (await contract()).wallet;
 
+    const wallet = (await contract()).wallet;
     // Mint NFT
     const tx = await nftContract.mintNFT(
       body.recipient || wallet.address,
       `${metadataURL}`
     );
     const receipt = await tx.wait();
+    console.log({ receipt });
     const tokenId = Number(receipt.logs[0].args[2]);
     return {
       tokenId,
       success: true,
       transactionHash: tx.hash,
+      contractAddress: process.env.NFT_CONTRACT_ADDRESS!,
     };
   } catch (error) {
     console.error("Error in mintNFT:", error);
@@ -65,7 +65,8 @@ export const getNftsByOwner = async (ownerAddress: string): Promise<NFT[]> => {
     const balance = await nftContract.balanceOf(ownerAddress);
     console.log({ balance });
     const nfts = [];
-    for (let i = 0; i < balance; i++) {
+
+    for (let i = 0; i < Number(balance); i++) {
       const tokenId = await nftContract.tokenOfOwnerByIndex(ownerAddress, i);
       const tokenUri = await nftContract.tokenURI(tokenId);
 
@@ -74,6 +75,7 @@ export const getNftsByOwner = async (ownerAddress: string): Promise<NFT[]> => {
         tokenUri.replace("ipfs://", "https://ipfs.io/ipfs/")
       );
       nfts.push({
+        contract_address: nftContract.target.toString(),
         owner_address: ownerAddress,
         token_id: tokenId.toString(),
         metadata: metadataResponse.data,
@@ -83,7 +85,7 @@ export const getNftsByOwner = async (ownerAddress: string): Promise<NFT[]> => {
     return nfts;
   } catch (error) {
     console.error("Error in getAllNftsByOwner:", error);
-    throw error;
+    throw new Error("Failed to retrieve NFTs");
   }
 };
 
@@ -126,62 +128,43 @@ export const _transferNFT = async (
   return receipt.hash;
 };
 
-// Burn NFT
-// export const _burnNFT = async (tokenId: number) => {
-//   console.log({ tokenId });
-//   const nftContract = (await contract()).nftContract;
-//   const tokenURI = await nftContract.tokenURI(tokenId);
-//   console.log({ tokenURI });
-//   const tx = await nftContract.burnNFT(tokenId);
-//   const receipt = await tx.wait();
-//   const unpinFile = await deleteFromPinata(tokenURI);
-//   console.log({ unpinFile });
-//   const metadataTokenURI = tokenURI + ".json";
-//   const unpinMetadata = await deleteFromPinata(metadataTokenURI);
-//   console.log({ unpinMetadata });
-//   return receipt;
-// };
-
-
+// Burn the requested nft
 export const _burnNFT = async (tokenId: number, ownerAddress: string) => {
   try {
-    console.log({ tokenId, ownerAddress });
     const nftContract = (await contract()).nftContract;
 
     // Verify token exists and belongs to the caller
     try {
       const tokenOwner = await nftContract.ownerOf(tokenId);
-      console.log({ tokenOwner });
       if (tokenOwner.toLowerCase() !== ownerAddress.toLowerCase()) {
-        throw new Error('Not token owner');
+        throw new Error("Not token owner");
       }
     } catch (err) {
-      console.error('Burn failed:', err);
+      console.error("Burn failed:", err);
       throw err;
     }
     const tokenURI = await nftContract.tokenURI(tokenId);
-
+    const ipfsMetadataHash = tokenURI.split("/").pop();
+    const file = await fetchFile(tokenURI);
+    const ipfsImageHash = file.image.split("/").pop();
     // Execute burn transaction
     const tx = await nftContract.burnNFT(tokenId);
     const receipt = await tx.wait();
 
     if (!receipt.status) {
-      throw new Error('Burn transaction failed');
+      throw new Error("Burn transaction failed");
     }
 
     // Cleanup IPFS (optional, handle errors separately)
     try {
-      console.log({ tokenURI });
-      await deleteFromPinata(tokenURI);
-      await deleteFromPinata(`${tokenURI}.json`);
+      await deleteFromPinata(ipfsMetadataHash, ipfsImageHash);
     } catch (err) {
-      console.warn('Pinata cleanup failed:', err);
+      console.warn("Pinata cleanup failed:", err);
     }
 
-    return {tokenId, transactionHash: receipt.transactionHash, success: true};
-
+    return { tokenId, transactionHash: receipt.transactionHash, success: true };
   } catch (error: any) {
-    console.error('Burn failed:', error);
+    console.error("Burn failed:", error);
     throw new Error(`Burn failed: ${error.message}`);
   }
 };

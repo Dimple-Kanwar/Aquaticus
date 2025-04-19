@@ -1,8 +1,15 @@
 import multer, { FileFilterCallback } from 'multer';
 import { Request, Response, NextFunction } from 'express';
 
+const storage = multer.diskStorage({
+    destination: 'uploads/',
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix);
+    }
+});
 const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
-    
+
     // Accept images and json files
     if (file.fieldname === 'nftFile') {
         if (file.mimetype.startsWith('image/')) {
@@ -10,7 +17,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallb
         } else {
             cb(new Error("Invalid file types! Only images are allowed in nftFile field."));
         }
-    }else if (file.fieldname === 'metadataFile') {
+    } else if (file.fieldname === 'metadataFile') {
         if (file.mimetype === 'application/json') {
             cb(null, true);
         } else {
@@ -21,16 +28,16 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallb
 
 // Configure multer upload
 export const upload = multer({
-    dest: '/tmp', 
+    storage,
     limits: {
-        fileSize: 1000000 // 1MB
-    }, 
-    fileFilter: fileFilter
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter
 });
 
 // Custom file validation middleware
 export const validateNFTFile = (req: Request, res: Response, next: NextFunction) => {
-    upload.fields([{ name: "nftFile", maxCount: 1}, { name: "metadataFile", maxCount: 1}])(req, res, (err) => {
+    upload.single('nftFile')(req, res, (err) => {
         if (err instanceof multer.MulterError) {
             // Multer error (file size, etc.)
             return res.status(400).json({
@@ -44,12 +51,11 @@ export const validateNFTFile = (req: Request, res: Response, next: NextFunction)
                 error: err.message
             });
         }
-        const files: any = req.files;
         // No file uploaded, throw error
-        if (!files || !files.nftFile || !files.metadataFile) {
+        if (!req.file) {
             return res.status(400).json({
-                message: 'Both NFT and metadata files are required',
-                // error: err.message
+                message: 'No File uploaded',
+                error: "NFT file is required"
             });
         }
         return next();
